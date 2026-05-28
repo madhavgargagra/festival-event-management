@@ -1,0 +1,296 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <!-- Horizontal strip to organize a festival -->
+  <div class="alert alert-info d-flex justify-content-between align-items-center p-4 rounded-3 border-0 shadow-sm mb-5" style="background: linear-gradient(90deg, rgba(10,102,194,0.1) 0%, rgba(0,168,132,0.1) 100%);">
+    <div>
+      <h4 class="fw-bold m-0">Want to organize a festival celebration?</h4>
+      <p class="m-0 text-muted small">Collaborate with coordinators, map sub-events, and secure donors.</p>
+    </div>
+    <a href="/organize" class="btn btn-accent-custom px-4 py-2.5"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Organize Festival</a>
+  </div>
+
+  <h2 class="fw-bold mb-4"><i class="fa-solid fa-champagne-glasses text-primary me-2"></i>Upcoming & Ongoing Festivals</h2>
+
+  <!-- Festival Cards Grid -->
+  <div class="row">
+    <% if (festivalsList && festivalsList.length > 0) { %>
+      <% festivalsList.forEach(fest => { %>
+        <div class="col-md-6 mb-4">
+          <div class="card card-premium shadow h-100">
+            <div class="card-body d-flex flex-column">
+              <h4 class="fw-bold mb-2"><%= fest.name %></h4>
+              
+              <div class="bg-light-custom p-3 rounded flex-grow-1">
+                <div class="col-6 small"><i class="fa-regular fa-calendar-check me-2 text-primary"></i>Starts: <%= fest.start_date %></div>
+                <div class="col-6 small"><i class="fa-regular fa-calendar-xmark me-2 text-primary"></i>Ends: <%= fest.end_date %></div>
+                <div class="col-12 small mt-2"><i class="fa-solid fa-location-dot me-2 text-accent"></i><%= fest.location || 'Central Plaza' %></div>
+              </div>
+
+              <div class="mt-auto pt-3">
+                <button class="btn btn-sm btn-outline-primary w-100 py-2 fw-semibold" onclick="openFestDetailsModal('<%= fest.festival_id %>', '<%= fest.name %>', '<%= fest.location %>', '<%= fest.start_date %>', '<%= fest.end_date %>', '<%= JSON.stringify(fest.Events || []).replace(/\'/g, `\\\'`).replace(/\"/g, `&quot;`) %>')">
+                  <i class="fa-solid fa-circle-info me-1"></i>View Details & Events
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12 text-center py-5 text-muted">
+        <i class="fa-solid fa-calendar-xmark fa-3x mb-3 text-opacity-25"></i>
+        <h5>No festivals listed at this moment.</h5>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal: Festival Details -->
+<div class="modal fade" id="festDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="festDetailTitle">Festival Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <ul class="list-group list-group-flush mb-4">
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-location-dot me-2"></i>Venue Location:</span>
+            <strong id="festDetailLoc">N/A</strong>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-calendar-check me-2"></i>Start Date:</span>
+            <strong id="festDetailStart">N/A</strong>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-calendar-xmark me-2"></i>End Date:</span>
+            <strong id="festDetailEnd">N/A</strong>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between text-wrap">
+            <span class="text-muted"><i class="fa-solid fa-circle-info me-2"></i>Description:</span>
+            <span class="text-end">Full-scale community-level festival celebrations.</span>
+          </li>
+        </ul>
+
+        <!-- Scheduled Sub-events Section -->
+        <div class="mb-4" id="festDetailEventsSection" style="display: none;">
+          <h6 class="fw-bold mb-3"><i class="fa-solid fa-calendar-days text-primary me-2"></i>Scheduled Sub-Events:</h6>
+          <div class="list-group list-group-flush border rounded-3 overflow-hidden" id="festDetailEventsList">
+            <!-- Dynamic events go here -->
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <% if (locals.user && user.role === 'Volunteer') { %>
+            <button class="btn btn-primary-custom w-100 py-2" id="festDetailJoinBtn"><i class="fa-solid fa-handshake me-2"></i>Join as Volunteer</button>
+          <% } else if (locals.user && user.role === 'Contributor') { %>
+            <button class="btn btn-accent-custom w-100 py-2" id="festDetailContribBtn"><i class="fa-solid fa-circle-dollar-to-slot me-2"></i>Contribute</button>
+          <% } else if (locals.user && user.role === 'Admin') { %>
+            <button class="btn btn-primary-custom w-50 py-2" id="festDetailJoinBtn"><i class="fa-solid fa-handshake me-2"></i>Join as Volunteer</button>
+            <button class="btn btn-accent-custom w-50 py-2" id="festDetailContribBtn"><i class="fa-solid fa-circle-dollar-to-slot me-2"></i>Contribute</button>
+          <% } else { %>
+            <!-- Hidden for Organizer / Finance / Vendor -->
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Join as Volunteer (Popup Window) -->
+<div class="modal fade" id="volunteerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="volunteerForm" class="modal-content modal-content-premium">
+      <input type="hidden" id="volFestId">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="volModalTitle">Join as Volunteer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="mb-3">
+          <label for="vName" class="form-label fw-semibold">Name</label>
+          <input type="text" class="form-control" id="vName" value="<%= locals.user ? user.name : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="vEmail" class="form-label fw-semibold">Email</label>
+          <input type="email" class="form-control" id="vEmail" value="<%= locals.user ? user.email : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="vPhone" class="form-label fw-semibold">Contact Details</label>
+          <input type="text" class="form-control" id="vPhone" required>
+        </div>
+        <div class="mb-3">
+          <label for="vAvailability" class="form-label fw-semibold">Availability schedule</label>
+          <input type="text" class="form-control" id="vAvailability" placeholder="e.g. Weekends, Morning hours" required>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Submit Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Make a Contribution (Popup Window) -->
+<div class="modal fade" id="contribModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="contribForm" class="modal-content modal-content-premium">
+      <input type="hidden" id="contribFestId">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="contribModalTitle">Make a Contribution</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="mb-3">
+          <label for="cName" class="form-label fw-semibold">Name</label>
+          <input type="text" class="form-control" id="cName" value="<%= locals.user ? user.name : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="cEmail" class="form-label fw-semibold">Email</label>
+          <input type="email" class="form-control" id="cEmail" value="<%= locals.user ? user.email : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="cPhone" class="form-label fw-semibold">Contact Details</label>
+          <input type="text" class="form-control" id="cPhone" required>
+        </div>
+        <div class="mb-3">
+          <label for="cAmount" class="form-label fw-semibold">Amount ($)</label>
+          <input type="number" step="0.01" class="form-control" id="cAmount" placeholder="0.00" required>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-accent-custom">Donate Now</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let detailsModalObj = null;
+
+  // 1. Open details popup
+  function openFestDetailsModal(id, name, loc, start, end, eventsJson) {
+    document.getElementById('festDetailTitle').textContent = name;
+    document.getElementById('festDetailLoc').textContent = loc || 'Main Venue Plaza';
+    document.getElementById('festDetailStart').textContent = start;
+    document.getElementById('festDetailEnd').textContent = end;
+
+    // Attach trigger redirects with safe existence checks
+    const joinBtn = document.getElementById('festDetailJoinBtn');
+    if (joinBtn) {
+      joinBtn.onclick = () => {
+        detailsModalObj.hide();
+        openFestVolunteerModal(id, name);
+      };
+    }
+
+    const contribBtn = document.getElementById('festDetailContribBtn');
+    if (contribBtn) {
+      contribBtn.onclick = () => {
+        detailsModalObj.hide();
+        openFestContributeModal(id, name);
+      };
+    }
+
+    const eventsSection = document.getElementById('festDetailEventsSection');
+    const eventsList = document.getElementById('festDetailEventsList');
+    
+    if (eventsSection && eventsList) {
+      eventsList.innerHTML = '';
+      if (eventsJson) {
+        try {
+          const events = JSON.parse(eventsJson);
+          if (events && events.length > 0) {
+            eventsSection.style.display = 'block';
+            events.forEach(evt => {
+              const dateStr = new Date(evt.date).toLocaleString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+              const item = document.createElement('a');
+              item.href = '/events';
+              item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3';
+              item.innerHTML = `
+                <div>
+                  <strong class="text-primary">${evt.name}</strong>
+                  <div class="text-muted small mt-1"><i class="fa-solid fa-clock me-1"></i>${dateStr} | <i class="fa-solid fa-location-dot me-1"></i>${evt.location}</div>
+                </div>
+                <span class="badge bg-primary text-white">$${parseFloat(evt.budget_estimate).toFixed(0)}</span>
+              `;
+              eventsList.appendChild(item);
+            });
+          } else {
+            eventsSection.style.display = 'block';
+            eventsList.innerHTML = '<div class="text-muted p-3 text-center small"><i class="fa-solid fa-circle-info me-2"></i>No sub-events scheduled for this festival yet.</div>';
+          }
+        } catch (err) {
+          console.error('Error parsing events list:', err);
+          eventsSection.style.display = 'none';
+        }
+      } else {
+        eventsSection.style.display = 'none';
+      }
+    }
+
+    detailsModalObj = bootstrap.Modal.getOrCreateInstance(document.getElementById('festDetailsModal'));
+    detailsModalObj.show();
+  }
+
+  // 2. Open Join Volunteer Modal
+  function openFestVolunteerModal(festId, name) {
+    document.getElementById('volFestId').value = festId;
+    document.getElementById('volModalTitle').textContent = `Join as Volunteer — ${name}`;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('volunteerModal')).show();
+  }
+
+  // 3. Open Contribution Modal
+  function openFestContributeModal(festId, name) {
+    document.getElementById('contribFestId').value = festId;
+    document.getElementById('contribModalTitle').textContent = `Make a Contribution — ${name}`;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('contribModal')).show();
+  }
+
+  // 4. Submit Volunteer application
+  document.getElementById('volunteerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const name = document.getElementById('vName').value;
+    alert(`Thank you, ${name}! Your request has been sent to the coordinators. You must complete verification under Profile.`);
+    window.location.reload();
+  });
+
+  // 5. Submit contribution
+  document.getElementById('contribForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const festival_id = document.getElementById('contribFestId').value;
+    const amount = document.getElementById('cAmount').value;
+    const name = document.getElementById('cName').value;
+    const email = document.getElementById('cEmail').value;
+    const phone = document.getElementById('cPhone').value;
+
+    try {
+      const res = await fetch('/api/contributors/contributions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          contribution_type: 'Cash', 
+          amount, 
+          festival_id, 
+          description: 'Donated directly to parent festival',
+          name,
+          email,
+          phone
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Thank you for your donation!');
+        window.location.href = '/thank-you';
+      }
+    } catch(err) {
+      alert('Error finalizing donation.');
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

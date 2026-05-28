@@ -1,0 +1,976 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <!-- Header Title -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <h2 class="fw-bold"><i class="fa-solid fa-gauge-high text-primary me-2"></i>Admin Dashboard</h2>
+    <div class="d-flex gap-2">
+      <a href="/api/audit/export" class="btn btn-outline-dark"><i class="fa-solid fa-file-csv me-2 text-success"></i>Export Audit CSV</a>
+      <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createFestivalModal"><i class="fa-solid fa-plus me-2"></i>New Festival</button>
+      <button class="btn btn-accent-custom" data-bs-toggle="modal" data-bs-target="#createEventModal"><i class="fa-solid fa-calendar-plus me-2"></i>New Event</button>
+    </div>
+  </div>
+
+  <!-- Metric Counters Row -->
+  <div class="row mb-5">
+    <div class="col-md-3 mb-3">
+      <a href="/festivals" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+        <div>
+          <h6 class="text-uppercase text-muted small fw-bold mb-1">Festivals</h6>
+          <h3 class="fw-bold m-0"><%= totalFestivals %></h3>
+        </div>
+        <div class="card-icon-wrapper card-icon-primary mb-0 animate-float" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+          <i class="fa-solid fa-champagne-glasses"></i>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3 mb-3">
+      <a href="/events" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+        <div>
+          <h6 class="text-uppercase text-muted small fw-bold mb-1">Events</h6>
+          <h3 class="fw-bold m-0"><%= totalEvents %></h3>
+        </div>
+        <div class="card-icon-wrapper card-icon-success mb-0" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+          <i class="fa-solid fa-calendar-days"></i>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3 mb-3">
+      <a href="#adminTabs" onclick="showAdminTab('tabVolunteers')" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+        <div>
+          <h6 class="text-uppercase text-muted small fw-bold mb-1">Volunteers</h6>
+          <h3 class="fw-bold m-0"><%= totalVolunteers %></h3>
+        </div>
+        <div class="card-icon-wrapper card-icon-warning mb-0" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+          <i class="fa-solid fa-people-group"></i>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3 mb-3">
+      <a href="#adminTabs" onclick="showAdminTab('tabVendors')" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+        <div>
+          <h6 class="text-uppercase text-muted small fw-bold mb-1">Vendors</h6>
+          <h3 class="fw-bold m-0"><%= totalVendors %></h3>
+        </div>
+        <div class="card-icon-wrapper card-icon-info mb-0" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+          <i class="fa-solid fa-truck-ramp-box"></i>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Visual Analytics Section -->
+  <div class="card card-premium mb-5">
+    <div class="card-header-premium d-flex justify-content-between align-items-center">
+      <span><i class="fa-solid fa-chart-column me-2 text-primary animate-float"></i>Event Financial Analytics</span>
+      <span class="badge bg-primary text-white fw-bold">Live Aggregations</span>
+    </div>
+    <div class="card-body">
+      <div style="position: relative; height: 350px; width: 100%;">
+        <canvas id="adminChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Expense Approvals Panel -->
+  <div class="card card-premium mb-5">
+    <div class="card-header-premium"><i class="fa-solid fa-receipt me-2"></i>Pending Expense Approvals</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-hover align-middle m-0 text-nowrap">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Event</th>
+            <th>Vendor</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Invoice</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (pendingExpenses && pendingExpenses.length > 0) { %>
+            <% pendingExpenses.forEach(exp => { %>
+              <tr id="expense-row-<%= exp.expense_id %>">
+                <td><%= exp.expense_id %></td>
+                <td><strong><%= exp.Event ? exp.Event.name : 'Unknown Event' %></strong></td>
+                <td><%= exp.Vendor ? exp.Vendor.name : 'N/A' %></td>
+                <td><%= exp.description %></td>
+                <td class="fw-bold text-danger">$<%= parseFloat(exp.amount).toFixed(2) %></td>
+                <td><%= exp.expense_date %></td>
+                <td>
+                  <% if (exp.invoice_path) { %>
+                    <a href="<%= exp.invoice_path %>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-eye me-1"></i>Invoice</a>
+                  <% } else { %>
+                    <span class="text-muted small">No Invoice</span>
+                  <% } %>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-success px-3 me-1" onclick="handleExpense('<%= exp.expense_id %>', 'Approved')">Approve</button>
+                  <button class="btn btn-sm btn-danger px-3" onclick="handleExpense('<%= exp.expense_id %>', 'Rejected')">Reject</button>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">No pending expense approvals.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tabbed User Directory -->
+  <div class="card card-premium mb-5">
+    <div class="card-header-premium"><i class="fa-solid fa-users me-2"></i>System User Directories</div>
+    <div class="card-body">
+      <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabOrganizers">Coordinators</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabVolunteers">Volunteers</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabVendors">Vendors</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabContributors">Contributors</button></li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- Tab Coordinators -->
+        <div class="tab-pane fade show active table-responsive" id="tabOrganizers">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% organizersList.forEach(org => { %>
+                <tr>
+                  <td><%= org.organizer_id %></td>
+                  <td><strong><%= org.name %></strong></td>
+                  <td><%= org.email %></td>
+                  <td><span class="badge bg-secondary"><%= org.role %></span></td>
+                  <td><%= org.Department ? org.Department.name : 'Unassigned' %></td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-dark" onclick="openEditOrganizer('<%= org.organizer_id %>', '<%= org.department_id %>', '<%= org.role %>')">Edit Role/Dept</button>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab Volunteers -->
+        <div class="tab-pane fade table-responsive" id="tabVolunteers">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Background check</th>
+                <th>Certifications</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% volunteers.forEach(vol => { %>
+                <tr>
+                  <td><%= vol.volunteer_id %></td>
+                  <td><strong><%= vol.name %></strong></td>
+                  <td><%= vol.email %></td>
+                  <td>
+                    <span class="badge badge-status <%= vol.background_check_status === 'Passed' ? 'badge-verified' : (vol.background_check_status === 'Failed' ? 'badge-flagged' : 'badge-pending') %>">
+                      <%= vol.background_check_status %>
+                    </span>
+                  </td>
+                  <td>
+                    <% if (vol.certification_path) { %>
+                      <a href="<%= vol.certification_path %>" target="_blank" class="btn btn-sm btn-link"><i class="fa-solid fa-file-pdf"></i> View Certificate</a>
+                    <% } else { %>
+                      <span class="text-muted small">None</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="updateBgStatus('<%= vol.volunteer_id %>', 'Passed')">Pass</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="updateBgStatus('<%= vol.volunteer_id %>', 'Failed')">Fail</button>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab Vendors -->
+        <div class="tab-pane fade table-responsive" id="tabVendors">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Service Type</th>
+                <th>Compliance Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% vendors.forEach(ven => { %>
+                <tr>
+                  <td><%= ven.vendor_id %></td>
+                  <td><strong><%= ven.name %></strong></td>
+                  <td><%= ven.email %></td>
+                  <td><%= ven.service_type %></td>
+                  <td>
+                    <span class="badge badge-status <%= ven.compliance_status === 'Verified' ? 'badge-verified' : (ven.compliance_status === 'Flagged' ? 'badge-flagged' : 'badge-pending') %>">
+                      <%= ven.compliance_status %>
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="verifyVendor('<%= ven.vendor_id %>', 'Verified')">Verify</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="verifyVendor('<%= ven.vendor_id %>', 'Flagged')">Flag</button>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab Contributors -->
+        <div class="tab-pane fade table-responsive" id="tabContributors">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% contributors.forEach(con => { %>
+                <tr>
+                  <td><%= con.contributor_id %></td>
+                  <td><strong><%= con.name %></strong></td>
+                  <td><%= con.email %></td>
+                  <td><span class="badge bg-info text-dark"><%= con.contributor_type %></span></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Logs Section -->
+  <div class="card card-premium mt-4">
+    <div class="card-header-premium"><i class="fa-solid fa-list-check me-2"></i>Recent System Audit Trail</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-hover align-middle m-0 text-nowrap">
+        <thead class="table-light">
+          <tr>
+            <th>Log ID</th>
+            <th>Entity</th>
+            <th>Record ID</th>
+            <th>Action</th>
+            <th>User</th>
+            <th>Role</th>
+            <th>Timestamp</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% logs.forEach(log => { %>
+            <tr>
+              <td><%= log.audit_id %></td>
+              <td><strong><%= log.entity_type %></strong></td>
+              <td><%= log.entity_id %></td>
+              <td>
+                <span class="badge <%= log.action === 'CREATE' ? 'bg-success' : (log.action === 'UPDATE' ? 'bg-warning text-dark' : 'bg-danger') %>">
+                  <%= log.action %>
+                </span>
+              </td>
+              <td><%= log.changed_by_id || 'System' %></td>
+              <td><span class="badge bg-secondary"><%= log.changed_by_role || 'System' %></span></td>
+              <td><%= new Date(log.timestamp).toLocaleString() %></td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary btn-audit-diff"
+                  data-entity="<%= log.entity_type %>"
+                  data-entity-id="<%= log.entity_id %>"
+                  data-action="<%= log.action %>"
+                  data-old="<%= JSON.stringify(log.old_value || {}).replace(/"/g, '&quot;') %>"
+                  data-new="<%= JSON.stringify(log.new_value || {}).replace(/"/g, '&quot;') %>">
+                  <i class="fa-solid fa-code-compare me-1"></i>View Changes
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SQL Sandbox & Benchmarking Console -->
+  <div class="card card-premium mt-4">
+    <div class="card-header-premium d-flex justify-content-between align-items-center">
+      <div>
+        <i class="fa-solid fa-terminal me-2"></i>SQL Sandbox & Query Benchmarking
+      </div>
+      <div>
+        <a href="/api/audit/backup" class="btn btn-sm btn-accent-custom py-2">
+          <i class="fa-solid fa-file-export me-2"></i>Export DB Backup (.sql)
+        </a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="alert bg-light-custom border mb-4">
+        <p class="small m-0 text-muted">
+          <i class="fa-solid fa-shield-halved text-warning me-2"></i>
+          <strong>DBMS Security Mode Active:</strong> Only read-only queries (e.g., <code>SELECT</code>, <code>SHOW</code>, <code>DESCRIBE</code>, <code>EXPLAIN</code>) are permitted. Mutating operations are automatically blocked.
+        </p>
+      </div>
+      
+      <div class="mb-3">
+        <label for="sandboxQueryInput" class="form-label fw-semibold">Write SQL Query</label>
+        <textarea class="form-control font-monospace p-3" id="sandboxQueryInput" rows="4" style="background-color: #0f172a !important; color: #38bdf8 !important; border-color: #334155 !important; font-size: 0.95rem; font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;" placeholder="SELECT * FROM events;"></textarea>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <button id="btnRunSandboxQuery" class="btn btn-primary-custom">
+          <i class="fa-solid fa-play me-2"></i>Run Query
+        </button>
+        <div id="sandboxTimerBadge" class="badge bg-secondary p-2 d-none">
+          <i class="fa-solid fa-stopwatch me-1"></i>Execution: <span id="sandboxExecutionTime">0.00</span> ms
+        </div>
+      </div>
+
+      <div class="border rounded p-3 bg-light-custom overflow-auto" id="sandboxConsoleOutput" style="max-height: 400px; display: none;">
+        <!-- Query output table or error terminal -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Organizer Role / Department -->
+<div class="modal fade" id="editOrganizerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="editOrganizerForm" class="modal-content modal-content-premium">
+      <input type="hidden" id="editOrgId">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold">Edit Staff Role / Department</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="mb-3">
+          <label for="editOrgDept" class="form-label fw-semibold">Department</label>
+          <select class="form-select" id="editOrgDept">
+            <option value="">Unassigned</option>
+            <% departments.forEach(dept => { %>
+              <option value="<%= dept.department_id %>"><%= dept.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="editOrgRole" class="form-label fw-semibold">System Permission Role</label>
+          <select class="form-select" id="editOrgRole" required>
+            <option value="Organizer">Organizer</option>
+            <option value="Finance">Finance</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Create Festival -->
+<div class="modal fade" id="createFestivalModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form id="createFestivalForm" class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold">Create New Festival Celebration</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="festName" class="form-label fw-semibold">Festival Name</label>
+              <input type="text" class="form-control" id="festName" placeholder="e.g. Summer Music Jubilee" required>
+            </div>
+            <div class="mb-3">
+              <label for="festLoc" class="form-label fw-semibold">Venue Location</label>
+              <input type="text" class="form-control" id="festLoc" placeholder="e.g. City Plaza Park" required>
+            </div>
+          </div>
+          <!-- Right Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="festStart" class="form-label fw-semibold">Start Date</label>
+              <input type="date" class="form-control" id="festStart" required>
+            </div>
+            <div class="mb-3">
+              <label for="festEnd" class="form-label fw-semibold">End Date</label>
+              <input type="date" class="form-control" id="festEnd" required>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Create Festival</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Create Event -->
+<div class="modal fade" id="createEventModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form id="createEventForm" class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold">Create Event Hub</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <!-- Double column grid layout -->
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="evtName" class="form-label fw-semibold">Event Name</label>
+              <input type="text" class="form-control" id="evtName" placeholder="e.g. Rock Showcase Concert" required>
+            </div>
+            <div class="mb-3">
+              <label for="evtDesc" class="form-label fw-semibold">Description</label>
+              <textarea class="form-control" id="evtDesc" rows="5" placeholder="Describe the event activities..."></textarea>
+            </div>
+          </div>
+          
+          <!-- Right Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="evtFest" class="form-label fw-semibold">Parent Festival</label>
+              <select class="form-select" id="evtFest" required>
+                <% festivals.forEach(f => { %>
+                  <option value="<%= f.festival_id %>"><%= f.name %> (<%= f.start_date %> to <%= f.end_date %>)</option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="evtLoc" class="form-label fw-semibold">Location Venue</label>
+              <input type="text" class="form-control" id="evtLoc" placeholder="e.g. Main Stage Pavilion" required>
+            </div>
+            <div class="mb-3">
+              <label for="evtDate" class="form-label fw-semibold">Scheduled Date & Time</label>
+              <input type="datetime-local" class="form-control" id="evtDate" required>
+              <small class="text-muted" style="font-size: 0.85rem; display: block; margin-top: 6px;">
+                <i class="fa-regular fa-keyboard me-1"></i>Type manually OR click the calendar icon
+              </small>
+            </div>
+            <div class="mb-3">
+              <label for="evtBudget" class="form-label fw-semibold">Budget Estimate ($)</label>
+              <input type="number" step="0.01" class="form-control" id="evtBudget" placeholder="0.00" required>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-accent-custom">Create Event</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // SweetAlert2 Toast setup
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 1500,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+
+  // 0. Initialize Event Financials Bar Chart
+  const financialData = <%- JSON.stringify(financialSummaries) %>;
+  const adminCtx = document.getElementById('adminChart').getContext('2d');
+  
+  function getChartColors() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      text: isDark ? '#cbd5e1' : '#475569',
+      grid: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)',
+      budgetBg: isDark ? 'rgba(99, 102, 241, 0.85)' : 'rgba(99, 102, 241, 0.75)',
+      allocBg: isDark ? 'rgba(16, 185, 129, 0.85)' : 'rgba(16, 185, 129, 0.75)',
+      expenseBg: isDark ? 'rgba(239, 68, 68, 0.85)' : 'rgba(239, 68, 68, 0.75)'
+    };
+  }
+
+  let chartColors = getChartColors();
+  
+  const adminChart = new Chart(adminCtx, {
+    type: 'bar',
+    data: {
+      labels: financialData.map(item => item.event_name),
+      datasets: [
+        {
+          label: 'Budget Estimate ($)',
+          data: financialData.map(item => parseFloat(item.budget_estimate || 0)),
+          backgroundColor: chartColors.budgetBg,
+          borderColor: 'transparent',
+          borderRadius: 8,
+          borderSkipped: false
+        },
+        {
+          label: 'Allocated Contributions ($)',
+          data: financialData.map(item => parseFloat(item.total_allocated_contributions || 0)),
+          backgroundColor: chartColors.allocBg,
+          borderColor: 'transparent',
+          borderRadius: 8,
+          borderSkipped: false
+        },
+        {
+          label: 'Approved Expenses ($)',
+          data: financialData.map(item => parseFloat(item.total_approved_expenses || 0)),
+          backgroundColor: chartColors.expenseBg,
+          borderColor: 'transparent',
+          borderRadius: 8,
+          borderSkipped: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: chartColors.text,
+            font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600', size: 13 }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleFont: { family: "'Outfit', sans-serif", weight: '700' },
+          bodyFont: { family: "'Plus Jakarta Sans', sans-serif" },
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) label += ': ';
+              if (context.parsed.y !== null) {
+                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: chartColors.grid },
+          ticks: {
+            color: chartColors.text,
+            font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600', size: 12 }
+          }
+        },
+        y: {
+          grid: { color: chartColors.grid },
+          ticks: {
+            color: chartColors.text,
+            font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600', size: 12 },
+            callback: function(value) {
+              return '$' + value;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Listen to global theme change event
+  window.addEventListener('themeChanged', (e) => {
+    const newColors = getChartColors();
+    adminChart.options.plugins.legend.labels.color = newColors.text;
+    adminChart.options.scales.x.grid.color = newColors.grid;
+    adminChart.options.scales.x.ticks.color = newColors.text;
+    adminChart.options.scales.y.grid.color = newColors.grid;
+    adminChart.options.scales.y.ticks.color = newColors.text;
+    
+    adminChart.data.datasets[0].backgroundColor = newColors.budgetBg;
+    adminChart.data.datasets[1].backgroundColor = newColors.allocBg;
+    adminChart.data.datasets[2].backgroundColor = newColors.expenseBg;
+    
+    adminChart.update();
+  });
+
+  // 1. Approve or Reject Expenses
+  async function handleExpense(expId, status) {
+    try {
+      const res = await fetch(`/api/expenses/${expId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approval_status: status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById(`expense-row-${expId}`).remove();
+        Toast.fire({
+          icon: 'success',
+          title: `Expense ${status.toLowerCase()} successfully!`
+        });
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: data.message || 'Operation failed.'
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error updating expense status.'
+      });
+    }
+  }
+
+  // 2. Edit Staff coordinates
+  function openEditOrganizer(orgId, deptId, role) {
+    document.getElementById('editOrgId').value = orgId;
+    document.getElementById('editOrgDept').value = deptId === 'null' ? '' : deptId;
+    document.getElementById('editOrgRole').value = role;
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editOrganizerModal'));
+    modal.show();
+  }
+
+  document.getElementById('editOrganizerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editOrgId').value;
+    const department_id = document.getElementById('editOrgDept').value || null;
+    const role = document.getElementById('editOrgRole').value;
+
+    try {
+      const res = await fetch(`/api/organizers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ department_id, role })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: data.message || 'Profile updated successfully.'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error editing coordinator profile.'
+      });
+    }
+  });
+
+  // 3. Update background checks status
+  async function updateBgStatus(volId, status) {
+    try {
+      const res = await fetch(`/api/volunteers/${volId}/background`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ background_check_status: status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: data.message || 'Background status updated.'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error updating background status.'
+      });
+    }
+  }
+
+  // 4. Update vendor compliance status
+  async function verifyVendor(venId, status) {
+    try {
+      const res = await fetch(`/api/vendors/${venId}/verify`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ compliance_status: status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: data.message || 'Vendor status updated.'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error updating vendor status.'
+      });
+    }
+  }
+
+  // 5. Create Festival API trigger
+  document.getElementById('createFestivalForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const name = document.getElementById('festName').value;
+    const location = document.getElementById('festLoc').value;
+    const start_date = document.getElementById('festStart').value;
+    const end_date = document.getElementById('festEnd').value;
+
+    try {
+      const res = await fetch('/api/festivals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, location, start_date, end_date })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Festival created successfully!'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error creating festival.'
+      });
+    }
+  });
+
+  // 6. Create Event API trigger
+  document.getElementById('createEventForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const festival_id = document.getElementById('evtFest').value;
+    const name = document.getElementById('evtName').value;
+    const description = document.getElementById('evtDesc').value;
+    const location = document.getElementById('evtLoc').value;
+    const dateStr = document.getElementById('evtDate').value;
+    const budget_estimate = document.getElementById('evtBudget').value;
+
+    if (!dateStr) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Please enter a valid Date & Time'
+      });
+      return;
+    }
+    const parsedDate = new Date(dateStr);
+    if (isNaN(parsedDate.getTime())) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Invalid Date & Time selection.'
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ festival_id, name, description, location, date: parsedDate.toISOString(), budget_estimate })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Event created successfully!'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: data.message || 'Error occurred.'
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error creating event.'
+      });
+    }
+  });
+
+  // Audit Diff Viewer Trigger Logic
+  document.querySelectorAll('.btn-audit-diff').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const entityType = this.getAttribute('data-entity');
+      const entityId = this.getAttribute('data-entity-id');
+      const action = this.getAttribute('data-action');
+      
+      let oldVal = {};
+      let newVal = {};
+      try {
+        oldVal = JSON.parse(this.getAttribute('data-old') || '{}');
+      } catch(e) { console.error('Failed to parse old value JSON:', e); }
+      try {
+        newVal = JSON.parse(this.getAttribute('data-new') || '{}');
+      } catch(e) { console.error('Failed to parse new value JSON:', e); }
+      
+      document.getElementById('diffEntityType').textContent = entityType;
+      document.getElementById('diffEntityId').textContent = entityId;
+      
+      const badge = document.getElementById('diffAction');
+      badge.textContent = action;
+      badge.className = 'badge ' + (action === 'CREATE' ? 'bg-success' : (action === 'UPDATE' ? 'bg-warning text-dark' : 'bg-danger'));
+      
+      const allKeys = new Set([...Object.keys(oldVal), ...Object.keys(newVal)]);
+      const tbody = document.getElementById('auditDiffTableBody');
+      tbody.innerHTML = '';
+      
+      if (allKeys.size === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No details recorded for this action.</td></tr>';
+      } else {
+        allKeys.forEach(key => {
+          if (key === 'password' || key === 'password_hash') return;
+          
+          const oldRaw = oldVal[key];
+          const newRaw = newVal[key];
+          
+          const oldDisplay = oldRaw !== undefined ? (typeof oldRaw === 'object' ? JSON.stringify(oldRaw) : oldRaw) : '';
+          const newDisplay = newRaw !== undefined ? (typeof newRaw === 'object' ? JSON.stringify(newRaw) : newRaw) : '';
+          
+          const tr = document.createElement('tr');
+          
+          const tdKey = document.createElement('td');
+          tdKey.innerHTML = `<code>${key}</code>`;
+          
+          const tdOld = document.createElement('td');
+          const tdNew = document.createElement('td');
+          
+          if (action === 'CREATE') {
+            tdOld.innerHTML = '<span class="text-muted small">None</span>';
+            tdNew.innerHTML = `<span class="badge bg-success-subtle text-success p-2 border border-success-subtle">${newDisplay}</span>`;
+          } else if (action === 'DELETE') {
+            tdOld.innerHTML = `<span class="badge bg-danger-subtle text-danger p-2 border border-danger-subtle" style="text-decoration: line-through;">${oldDisplay}</span>`;
+            tdNew.innerHTML = '<span class="text-muted small">None</span>';
+          } else {
+            if (oldDisplay === newDisplay) {
+              tdOld.textContent = oldDisplay;
+              tdNew.textContent = newDisplay;
+            } else {
+              tdOld.innerHTML = `<span class="text-danger border-bottom border-danger" style="text-decoration: line-through;">${oldDisplay}</span>`;
+              tdNew.innerHTML = `<span class="text-success fw-bold border-bottom border-success bg-success bg-opacity-10 px-1 rounded">${newDisplay}</span>`;
+            }
+          }
+          
+          tr.appendChild(tdKey);
+          tr.appendChild(tdOld);
+          tr.appendChild(tdNew);
+          tbody.appendChild(tr);
+        });
+      }
+      
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('auditDiffModal')).show();
+    });
+  });
+
+  // SQL Sandbox execution AJAX trigger
+  document.getElementById('btnRunSandboxQuery').addEventListener('click', async function() {
+    const sql = document.getElementById('sandboxQueryInput').value.trim();
+    if (!sql) {
+      Toast.fire({
+        icon: 'warning',
+        title: 'Please enter an SQL query first.'
+      });
+      return;
+    }
+
+    const outputDiv = document.getElementById('sandboxConsoleOutput');
+    const timerBadge = document.getElementById('sandboxTimerBadge');
+    
+    outputDiv.style.display = 'block';
+    outputDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>Running query benchmarks...</div>';
+    timerBadge.classList.add('d-none');
+
+    try {
+      const res = await fetch('/api/audit/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        timerBadge.classList.remove('d-none');
+        document.getElementById('sandboxExecutionTime').textContent = data.executionTimeMs;
+
+        const results = data.results;
+        if (results.length === 0) {
+          outputDiv.innerHTML = '<div class="text-muted p-2"><i class="fa-solid fa-circle-info me-2"></i>Query executed successfully, but returned 0 rows.</div>';
+          return;
+        }
+
+        const headers = Object.keys(results[0]);
+        let tableHtml = '<table class="table table-hover table-striped align-middle m-0 small">';
+        tableHtml += '<thead class="table-dark"><tr>';
+        headers.forEach(h => {
+          tableHtml += `<th>${h}</th>`;
+        });
+        tableHtml += '</tr></thead><tbody>';
+        
+        results.forEach(row => {
+          tableHtml += '<tr>';
+          headers.forEach(h => {
+            const val = row[h];
+            tableHtml += `<td>${val !== null ? (typeof val === 'object' ? JSON.stringify(val) : val) : '<span class="text-muted">NULL</span>'}</td>`;
+          });
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table>';
+
+        outputDiv.innerHTML = tableHtml;
+      } else {
+        outputDiv.innerHTML = `
+          <div class="p-3 rounded font-monospace" style="font-family: monospace; font-size: 0.9rem; line-height: 1.5; color: #ef4444 !important; background-color: #0b0f19 !important;">
+            <div class="fw-bold mb-2"><i class="fa-solid fa-circle-xmark me-2"></i>Database Error / Constraint Violation</div>
+            <div>${data.message}</div>
+          </div>
+        `;
+      }
+    } catch(err) {
+      outputDiv.innerHTML = `<div class="alert alert-danger m-0">Failed to connect to the SQL sandbox API: ${err.message}</div>`;
+    }
+  });
+
+  // Client-side tab navigation helper
+  window.showAdminTab = function(tabId) {
+    const tabEl = document.querySelector(`#adminTabs button[data-bs-target="#${tabId}"]`);
+    if (tabEl) {
+      const tab = new bootstrap.Tab(tabEl);
+      tab.show();
+      document.getElementById('adminTabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+</script>
+
+<%- include('partials/audit_diff_modal') %>
+<%- include('partials/footer') %>

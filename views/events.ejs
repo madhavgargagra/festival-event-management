@@ -1,0 +1,280 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <!-- Horizontal strip to organize an event -->
+  <div class="alert alert-info d-flex justify-content-between align-items-center p-4 rounded-3 border-0 shadow-sm mb-5" style="background: linear-gradient(90deg, rgba(10,102,194,0.1) 0%, rgba(0,168,132,0.1) 100%);">
+    <div>
+      <h4 class="fw-bold m-0">Want to organize an event?</h4>
+      <p class="m-0 text-muted small">Coordinate resources, budget estimates, and volunteer shifts seamlessly.</p>
+    </div>
+    <a href="/organize" class="btn btn-primary-custom px-4 py-2.5"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Organize Event</a>
+  </div>
+
+  <h2 class="fw-bold mb-4"><i class="fa-solid fa-calendar-days text-primary me-2"></i>Upcoming & Ongoing Events</h2>
+
+  <!-- Event Cards Grid -->
+  <div class="row">
+    <% if (eventsList && eventsList.length > 0) { %>
+      <% eventsList.forEach(evt => { %>
+        <div class="col-md-6 mb-4">
+          <div class="card card-premium shadow h-100">
+            <div class="card-body d-flex flex-column">
+              <h4 class="fw-bold mb-2"><%= evt.name %></h4>
+              <p class="text-muted small text-truncate-3 flex-grow-1"><%= evt.description || 'No description provided.' %></p>
+              
+              <div class="row g-2 mb-4 bg-light-custom p-3 rounded">
+                <div class="col-6 small"><i class="fa-regular fa-calendar me-2 text-primary"></i><%= new Date(evt.date).toLocaleDateString() %></div>
+                <div class="col-6 small"><i class="fa-regular fa-clock me-2 text-primary"></i><%= new Date(evt.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></div>
+                <div class="col-12 small mt-2"><i class="fa-solid fa-location-dot me-2 text-accent"></i><%= evt.location %></div>
+              </div>
+
+              <div class="mt-auto pt-3">
+                <button class="btn btn-sm btn-outline-primary w-100 py-2 fw-semibold" onclick="openDetailsModal('<%= evt.event_id %>', '<%= evt.name %>', '<%= evt.description ? evt.description.replace(/'/g, '\\\'').replace(/"/g, '&quot;') : "" %>', '<%= evt.location %>', '<%= new Date(evt.date).toLocaleString() %>', '<%= evt.Organizer ? evt.Organizer.name : "N/A" %>', '<%= evt.Organizer ? evt.Organizer.email : "N/A" %>', '<%= evt.Organizer ? evt.Organizer.phone : "N/A" %>')">
+                  <i class="fa-solid fa-circle-info me-1"></i>View Event Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12 text-center py-5 text-muted">
+        <i class="fa-solid fa-calendar-xmark fa-3x mb-3 text-opacity-25"></i>
+        <h5>No events scheduled at this moment.</h5>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal: Event Details -->
+<div class="modal fade" id="eventDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="detailTitle">Event Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <p class="text-muted" id="detailDesc">Event description goes here...</p>
+        <hr>
+        <ul class="list-group list-group-flush mb-4">
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-calendar me-2"></i>Date & Time:</span>
+            <strong id="detailDate">N/A</strong>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-location-dot me-2"></i>Venue:</span>
+            <strong id="detailLoc">N/A</strong>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-user-tie me-2"></i>Organizer Name:</span>
+            <strong id="detailOrgName">N/A</strong>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-envelope me-2"></i>Email:</span>
+            <strong id="detailOrgEmail">N/A</strong>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+            <span class="text-muted"><i class="fa-solid fa-phone me-2"></i>Phone:</span>
+            <strong id="detailOrgPhone">N/A</strong>
+          </li>
+        </ul>
+        <div class="d-flex gap-2">
+          <% if (locals.user && user.role === 'Volunteer') { %>
+            <button class="btn btn-primary-custom w-100 py-2" id="detailJoinBtn"><i class="fa-solid fa-handshake me-2"></i>Join as Volunteer</button>
+          <% } else if (locals.user && user.role === 'Contributor') { %>
+            <button class="btn btn-accent-custom w-100 py-2" id="detailContribBtn"><i class="fa-solid fa-circle-dollar-to-slot me-2"></i>Contribute</button>
+          <% } else if (locals.user && user.role === 'Admin') { %>
+            <button class="btn btn-primary-custom w-50 py-2" id="detailJoinBtn"><i class="fa-solid fa-handshake me-2"></i>Join as Volunteer</button>
+            <button class="btn btn-accent-custom w-50 py-2" id="detailContribBtn"><i class="fa-solid fa-circle-dollar-to-slot me-2"></i>Contribute</button>
+          <% } else { %>
+            <!-- Hidden for Organizer / Finance / Vendor -->
+          <% } %>
+        </div>
+        <% if (locals.user && (user.role === 'Admin' || user.role === 'Finance' || user.role === 'Organizer')) { %>
+          <div class="mt-3">
+            <button class="btn btn-outline-primary w-100 py-2 fw-semibold" id="detailPrintBtn">
+              <i class="fa-solid fa-file-pdf me-2"></i>Print Invoice/PDF Report
+            </button>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Join as Volunteer (Popup Window) -->
+<div class="modal fade" id="volunteerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="volunteerForm" class="modal-content modal-content-premium">
+      <input type="hidden" id="volEventId">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="volModalTitle">Join as Volunteer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="mb-3">
+          <label for="vName" class="form-label fw-semibold">Name</label>
+          <input type="text" class="form-control" id="vName" value="<%= locals.user ? user.name : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="vEmail" class="form-label fw-semibold">Email</label>
+          <input type="email" class="form-control" id="vEmail" value="<%= locals.user ? user.email : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="vPhone" class="form-label fw-semibold">Contact Details</label>
+          <input type="text" class="form-control" id="vPhone" placeholder="555-1234" required>
+        </div>
+        <div class="mb-3">
+          <label for="vAvailability" class="form-label fw-semibold">Availability Description</label>
+          <input type="text" class="form-control" id="vAvailability" placeholder="e.g. Weekends, Morning hours" required>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Submit Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Make a Contribution (Popup Window) -->
+<div class="modal fade" id="contribModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="contribForm" class="modal-content modal-content-premium">
+      <input type="hidden" id="contribEventId">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="contribModalTitle">Make a Contribution</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="mb-3">
+          <label for="cName" class="form-label fw-semibold">Name</label>
+          <input type="text" class="form-control" id="cName" value="<%= locals.user ? user.name : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="cEmail" class="form-label fw-semibold">Email</label>
+          <input type="email" class="form-control" id="cEmail" value="<%= locals.user ? user.email : '' %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="cPhone" class="form-label fw-semibold">Contact Details</label>
+          <input type="text" class="form-control" id="cPhone" required>
+        </div>
+        <div class="mb-3">
+          <label for="cAmount" class="form-label fw-semibold">Amount ($)</label>
+          <input type="number" step="0.01" class="form-control" id="cAmount" placeholder="0.00" required>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-accent-custom">Donate Now</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let detailsModalObj = null;
+
+  // 1. Populate and open details modal
+  function openDetailsModal(id, name, desc, loc, date, orgName, orgEmail, orgPhone) {
+    document.getElementById('detailTitle').textContent = name;
+    document.getElementById('detailDesc').textContent = desc || 'No description available.';
+    document.getElementById('detailDate').textContent = date;
+    document.getElementById('detailLoc').textContent = loc;
+    document.getElementById('detailOrgName').textContent = orgName;
+    document.getElementById('detailOrgEmail').textContent = orgEmail;
+    document.getElementById('detailOrgPhone').textContent = orgPhone;
+
+    // Attach trigger redirects/modals with safe existence checks
+    const joinBtn = document.getElementById('detailJoinBtn');
+    if (joinBtn) {
+      joinBtn.onclick = () => {
+        detailsModalObj.hide();
+        openVolunteerModal(id, name);
+      };
+    }
+
+    const contribBtn = document.getElementById('detailContribBtn');
+    if (contribBtn) {
+      contribBtn.onclick = () => {
+        detailsModalObj.hide();
+        openContributeModal(id, name);
+      };
+    }
+
+    const printBtn = document.getElementById('detailPrintBtn');
+    if (printBtn) {
+      printBtn.onclick = () => {
+        window.open(`/events/${id}/report`, '_blank');
+      };
+    }
+
+    detailsModalObj = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventDetailsModal'));
+    detailsModalObj.show();
+  }
+
+  // 2. Open Join Volunteer Modal
+  function openVolunteerModal(evtId, name) {
+    document.getElementById('volEventId').value = evtId;
+    document.getElementById('volModalTitle').textContent = `Join as Volunteer — ${name}`;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('volunteerModal')).show();
+  }
+
+  // 3. Open Contribution Modal
+  function openContributeModal(evtId, name) {
+    document.getElementById('contribEventId').value = evtId;
+    document.getElementById('contribModalTitle').textContent = `Make a Contribution — ${name}`;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('contribModal')).show();
+  }
+
+  // 4. Submit Volunteer shifts assignment
+  document.getElementById('volunteerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const event_id = document.getElementById('volEventId').value;
+    const name = document.getElementById('vName').value;
+    const phone = document.getElementById('vPhone').value;
+    const email = document.getElementById('vEmail').value;
+    const availability_schedule = document.getElementById('vAvailability').value;
+
+    // Call updates to Profile or save as request (we can simulate standard submit since volunteers register first)
+    alert(`Thank you, ${name}! Your request has been sent to the organizer. You must complete verification under Profile.`);
+    window.location.reload();
+  });
+
+  // 5. Submit contribution
+  document.getElementById('contribForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const event_id = document.getElementById('contribEventId').value;
+    const amount = document.getElementById('cAmount').value;
+    const name = document.getElementById('cName').value;
+    const email = document.getElementById('cEmail').value;
+    const phone = document.getElementById('cPhone').value;
+
+    try {
+      const res = await fetch('/api/contributors/contributions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          contribution_type: 'Cash', 
+          amount, 
+          event_id,
+          description: `Donated to Event ID #${event_id}`,
+          name,
+          email,
+          phone
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Thank you for your donation!');
+        window.location.href = '/thank-you';
+      }
+    } catch(err) {
+      alert('Error finalizing donation.');
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

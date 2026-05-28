@@ -1,0 +1,167 @@
+<%- include('partials/header') %>
+
+<div class="main-content flex-grow-1">
+  <!-- Top Right Header Navigation -->
+  <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom border-light">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-masks-theater text-primary fs-3 animate-float"></i>
+      <h3 class="fw-bold mb-0">FestSystem</h3>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <% if (locals.user) { %>
+        <span class="me-2 text-muted d-none d-md-inline">Welcome, <strong><%= user.name %></strong>!</span>
+        <a href="/dashboard" class="btn btn-primary-custom"><i class="fa-solid fa-gauge me-2"></i>Dashboard</a>
+      <% } else { %>
+        <a href="/login" class="btn btn-outline-primary fw-semibold">Login</a>
+        <a href="/register" class="btn btn-primary-custom">Sign Up</a>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="hero-banner text-center shadow-lg p-5 mb-5 position-relative">
+    <div class="container py-4 position-relative" style="z-index: 2;">
+      <div class="d-inline-flex align-items-center justify-content-center card-icon-wrapper card-icon-primary mx-auto mb-4 bg-white bg-opacity-10 text-info" style="width: 80px; height: 80px; border-radius: 20px;">
+        <i class="fa-solid fa-masks-theater fa-2x"></i>
+      </div>
+      <h1 class="display-3 fw-extrabold text-white tracking-tight mb-3" style="font-family: 'Outfit', sans-serif;">Festival & Event Management</h1>
+      <p class="lead mt-3 mx-auto col-md-8 text-white fs-5">
+        A premium, full-service portal for managing, contributing, volunteering, and organizing community-wide festival and event celebrations.
+      </p>
+      <div class="mt-5">
+        <% if (locals.user) { %>
+          <a href="/dashboard" class="btn btn-accent-custom btn-lg px-5 py-3 shadow-lg fs-6"><i class="fa-solid fa-gauge me-2"></i>Go to Dashboard</a>
+        <% } else { %>
+          <a href="/register" class="btn btn-accent-custom btn-lg px-5 py-3 shadow-lg fs-6"><i class="fa-solid fa-right-to-bracket me-2"></i>Get Started Today</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Role Quick Shortcuts -->
+  <h4 class="fw-bold mb-4 mt-5"><i class="fa-solid fa-circle-nodes text-primary me-2"></i>Join the Celebration</h4>
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <a href="/register?role=Contributor" class="text-decoration-none card card-premium h-100 p-4 text-center">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+          <div class="card-icon-wrapper card-icon-primary mx-auto mb-3">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Contributors</h5>
+          <p class="text-muted small">Donate money, goods, or professional services to help fund and sustain community celebrations.</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-4 mb-4">
+      <a href="/register?role=Volunteer" class="text-decoration-none card card-premium h-100 p-4 text-center">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+          <div class="card-icon-wrapper card-icon-success mx-auto mb-3">
+            <i class="fa-solid fa-people-group"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Volunteers</h5>
+          <p class="text-muted small">Join event shifts, log your volunteer hours, and support local safety and guest hospitality.</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-4 mb-4">
+      <a href="/register?role=Vendor" class="text-decoration-none card card-premium h-100 p-4 text-center">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+          <div class="card-icon-wrapper card-icon-warning mx-auto mb-3">
+            <i class="fa-solid fa-cubes"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Vendors</h5>
+          <p class="text-muted small">Provide catering, sound setup, or security services and submit invoices for automated tracking.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Dynamic Section: Ongoing & Upcoming Festivals -->
+  <div class="d-flex justify-content-between align-items-center mt-5 mb-4">
+    <h4 class="fw-bold mb-0"><i class="fa-solid fa-champagne-glasses text-primary me-2"></i>Active Festivals</h4>
+    <a href="/festivals" class="btn btn-sm btn-outline-primary">View All Festivals</a>
+  </div>
+
+  <% if (ongoingFestivals && ongoingFestivals.length > 0) { %>
+    <div class="row">
+      <% ongoingFestivals.forEach(fest => { %>
+        <div class="col-md-4 mb-4">
+          <div class="card card-premium h-100">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex align-items-center mb-3">
+                <div class="card-icon-wrapper card-icon-primary me-3">
+                  <i class="fa-solid fa-champagne-glasses"></i>
+                </div>
+                <div class="text-truncate">
+                  <h5 class="card-title fw-bold mb-0 text-truncate"><%= fest.name %></h5>
+                  <small class="text-muted"><i class="fa-solid fa-location-dot me-1"></i><%= fest.location || 'Various locations' %></small>
+                </div>
+              </div>
+              <p class="text-muted small flex-grow-1">Join the community for a celebration starting from <%= new Date(fest.start_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) %> to <%= new Date(fest.end_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) %>.</p>
+              <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
+                <span class="badge badge-status badge-verified">Active</span>
+                <a href="/login" class="btn btn-sm btn-outline-primary py-1 px-3">Join Fest</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="card card-premium p-5 text-center text-muted mb-4">
+      <div class="card-body">
+        <i class="fa-regular fa-calendar-xmark fa-3x text-muted mb-3"></i>
+        <h5>No Active Festivals</h5>
+        <p class="text-muted small mb-0">Check back later or register to get updates when new festivals are listed.</p>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Dynamic Section: Featured Events -->
+  <div class="d-flex justify-content-between align-items-center mt-5 mb-4">
+    <h4 class="fw-bold mb-0"><i class="fa-solid fa-calendar-days text-success me-2"></i>Upcoming Events</h4>
+    <a href="/events" class="btn btn-sm btn-outline-primary">View All Events</a>
+  </div>
+
+  <% if (ongoingEvents && ongoingEvents.length > 0) { %>
+    <div class="row">
+      <% ongoingEvents.forEach(evt => { %>
+        <div class="col-md-6 mb-4">
+          <div class="card card-premium h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex align-items-center text-truncate">
+                  <div class="card-icon-wrapper card-icon-success me-3">
+                    <i class="fa-solid fa-calendar-check"></i>
+                  </div>
+                  <div class="text-truncate">
+                    <h5 class="card-title fw-bold mb-0 text-truncate"><%= evt.name %></h5>
+                    <small class="text-muted"><i class="fa-solid fa-clock me-1"></i><%= new Date(evt.date).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) %></small>
+                  </div>
+                </div>
+                <% if (evt.budget_estimate > 0) { %>
+                  <span class="badge badge-status badge-verified d-none d-sm-inline-flex">$<%= parseFloat(evt.budget_estimate).toLocaleString() %> Budget</span>
+                <% } %>
+              </div>
+              <p class="text-muted small mb-3"><%= evt.description || 'No description provided.' %></p>
+              <div class="d-flex align-items-center justify-content-between mt-3 pt-3 border-top border-light">
+                <span class="small text-muted text-truncate"><i class="fa-solid fa-location-arrow me-1"></i><%= evt.location || 'Main Venue' %></span>
+                <a href="/login" class="btn btn-sm btn-outline-success py-1 px-3">RSVP/Volunteer</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="card card-premium p-5 text-center text-muted">
+      <div class="card-body">
+        <i class="fa-solid fa-triangle-exclamation fa-3x text-muted mb-3"></i>
+        <h5>No Events Scheduled</h5>
+        <p class="text-muted small mb-0">There are currently no events scheduled for upcoming festivals.</p>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

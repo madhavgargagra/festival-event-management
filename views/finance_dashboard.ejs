@@ -1,0 +1,563 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <h2 class="fw-bold"><i class="fa-solid fa-calculator text-primary me-2"></i>Finance Board</h2>
+    <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#newExpenseModal"><i class="fa-solid fa-file-invoice-dollar me-2"></i>New Expense</button>
+  </div>
+
+  <!-- Finance Stats & Chart Row -->
+  <div class="row mb-5">
+    <!-- Quick Metrics (Left) -->
+    <div class="col-lg-6 mb-4 mb-lg-0">
+      <div class="row h-100 g-3">
+        <div class="col-sm-6">
+          <a href="#financeTabs" onclick="showFinanceTab('tabContributions')" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+            <div>
+              <h6 class="text-uppercase text-muted small fw-bold mb-1">Total Contributions</h6>
+              <h3 class="fw-bold text-success m-0" id="statContributions">$0.00</h3>
+            </div>
+            <div class="card-icon-wrapper card-icon-success mb-0 animate-float" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+          </a>
+        </div>
+        <div class="col-sm-6">
+          <a href="#financeTabs" onclick="showFinanceTab('tabAllocations')" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+            <div>
+              <h6 class="text-uppercase text-muted small fw-bold mb-1">Total Allocated</h6>
+              <h3 class="fw-bold text-primary m-0" id="statAllocations">$0.00</h3>
+            </div>
+            <div class="card-icon-wrapper card-icon-primary mb-0" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+              <i class="fa-solid fa-chart-pie"></i>
+            </div>
+          </a>
+        </div>
+        <div class="col-sm-6">
+          <a href="#financeTabs" onclick="showFinanceTab('tabExpenses')" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+            <div>
+              <h6 class="text-uppercase text-muted small fw-bold mb-1">Approved Expenses</h6>
+              <h3 class="fw-bold text-danger m-0" id="statApprovedExpenses">$0.00</h3>
+            </div>
+            <div class="card-icon-wrapper card-icon-danger mb-0" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+          </a>
+        </div>
+        <div class="col-sm-6">
+          <a href="#financeTabs" onclick="showFinanceTab('tabApprovals')" class="text-decoration-none card card-premium p-4 d-flex flex-row align-items-center justify-content-between h-100 cursor-pointer">
+            <div>
+              <h6 class="text-uppercase text-muted small fw-bold mb-1">Pending Approval</h6>
+              <h3 class="fw-bold text-warning m-0" id="statPendingExpenses">$0.00</h3>
+            </div>
+            <div class="card-icon-wrapper card-icon-warning mb-0" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.25rem;">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doughnut Chart (Right) -->
+    <div class="col-lg-6">
+      <div class="card card-premium h-100">
+        <div class="card-header-premium d-flex justify-content-between align-items-center py-3">
+          <span><i class="fa-solid fa-chart-pie me-2 text-primary animate-float"></i>Expense Category Breakdown</span>
+          <span class="badge bg-success">Approved Items</span>
+        </div>
+        <div class="card-body d-flex align-items-center justify-content-center p-3" style="position: relative; height: 260px;">
+          <canvas id="financeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Tabs layout -->
+  <ul class="nav nav-pills mb-4" id="financeTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabExpenses">Expenses Log</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabApprovals">Expense Approvals</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabContributions">Contributions</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAllocations">Contribution Allocations</button></li>
+  </ul>
+
+  <div class="tab-content">
+    <!-- Expenses Log Pane -->
+    <div class="tab-pane fade show active" id="tabExpenses">
+      <div class="card card-premium">
+        <div class="card-header-premium">All Expenses Tracker</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Event</th>
+                <th>Vendor</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Approval</th>
+                <th>Payment</th>
+                <th>Invoice</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% expenses.forEach(exp => { %>
+                <tr>
+                  <td><%= exp.expense_id %></td>
+                  <td><strong><%= exp.Event ? exp.Event.name : 'Unknown' %></strong></td>
+                  <td><%= exp.Vendor ? exp.Vendor.name : 'N/A' %></td>
+                  <td class="fw-bold text-danger">$<%= parseFloat(exp.amount).toFixed(2) %></td>
+                  <td><%= exp.expense_date %></td>
+                  <td>
+                    <span class="badge <%= exp.approval_status === 'Approved' ? 'bg-success' : (exp.approval_status === 'Recommended' ? 'bg-info text-dark' : (exp.approval_status === 'Rejected' ? 'bg-danger' : 'bg-secondary')) %>">
+                      <%= exp.approval_status %>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge <%= exp.payment_status === 'Paid' ? 'bg-success' : 'bg-warning text-dark' %>">
+                      <%= exp.payment_status %>
+                    </span>
+                  </td>
+                  <td>
+                    <% if (exp.invoice_path) { %>
+                      <a href="<%= exp.invoice_path %>" target="_blank" class="btn btn-sm btn-link"><i class="fa-solid fa-file-invoice"></i> View Invoice</a>
+                    <% } else { %>
+                      <span class="text-muted small">No Invoice</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (exp.payment_status !== 'Paid') { %>
+                      <button class="btn btn-sm btn-outline-success" onclick="markPaid('<%= exp.expense_id %>', '<%= exp.invoice_path ? 'yes' : 'no' %>')">Mark Paid</button>
+                    <% } else { %>
+                      <span class="text-success small"><i class="fa-solid fa-circle-check me-1"></i>Cleared</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approvals Pane -->
+    <div class="tab-pane fade" id="tabApprovals">
+      <div class="card card-premium">
+        <div class="card-header-premium">Approve/Reject Expenditure Requests</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Event</th>
+                <th>Vendor</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Invoice</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% const pendings = expenses.filter(e => e.approval_status === 'Pending' || e.approval_status === 'Recommended') %>
+              <% if (pendings.length > 0) { %>
+                <% pendings.forEach(exp => { %>
+                  <tr>
+                    <td><%= exp.expense_id %></td>
+                    <td><strong><%= exp.Event ? exp.Event.name : 'Unknown' %></strong></td>
+                    <td><%= exp.Vendor ? exp.Vendor.name : 'N/A' %></td>
+                    <td class="fw-bold text-danger">$<%= parseFloat(exp.amount).toFixed(2) %></td>
+                    <td><span class="badge bg-secondary"><%= exp.approval_status %></span></td>
+                    <td>
+                      <% if (exp.invoice_path) { %>
+                        <a href="<%= exp.invoice_path %>" target="_blank" class="btn btn-sm btn-link"><i class="fa-solid fa-eye"></i> View</a>
+                      <% } else { %>
+                        <span class="text-muted small">No Invoice</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-success px-3 me-1" onclick="updateApproval('<%= exp.expense_id %>', 'Approved')">Approve</button>
+                      <button class="btn btn-sm btn-danger px-3" onclick="updateApproval('<%= exp.expense_id %>', 'Rejected')">Reject</button>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">No pending expense approvals.</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contributions Pane -->
+    <div class="tab-pane fade" id="tabContributions">
+      <div class="card card-premium">
+        <div class="card-header-premium">Monetary & In-Kind Contributions List</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-striped align-middle m-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Contributor</th>
+                <th>Festival</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% contributions.forEach(con => { %>
+                <tr>
+                  <td><%= con.contribution_id %></td>
+                  <td><strong><%= con.Contributor ? con.Contributor.name : 'Anonymous' %></strong></td>
+                  <td><%= con.Festival ? con.Festival.name : 'General Fund' %></td>
+                  <td><span class="badge bg-info text-dark"><%= con.contribution_type %></span></td>
+                  <td class="fw-bold text-success">$<%= parseFloat(con.amount || 0).toFixed(2) %></td>
+                  <td><%= con.date %></td>
+                  <td><small class="text-muted"><%= con.description || 'N/A' %></small></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocations Pane -->
+    <div class="tab-pane fade" id="tabAllocations">
+      <div class="card card-premium">
+        <div class="card-header-premium">Allocation of Funds to Events</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-striped align-middle m-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Contrib. ID</th>
+                <th>Event Destination</th>
+                <th>Allocated Amount</th>
+                <th>Item Specification</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% allocations.forEach(alloc => { %>
+                <tr>
+                  <td><%= alloc.allocation_id %></td>
+                  <td>#<%= alloc.contribution_id %></td>
+                  <td><strong><%= alloc.Event ? alloc.Event.name : 'N/A' %></strong></td>
+                  <td class="fw-bold text-success">$<%= parseFloat(alloc.allocated_amount || 0).toFixed(2) %></td>
+                  <td><%= alloc.allocated_item %></td>
+                  <td>
+                    <span class="badge <%= alloc.status === 'Allocated' ? 'bg-success' : 'bg-warning text-dark' %>">
+                      <%= alloc.status %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: New Expense -->
+<div class="modal fade" id="newExpenseModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form id="newExpenseForm" class="modal-content modal-content-premium" enctype="multipart/form-data">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold">Record Expense Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <input type="hidden" name="uploadType" value="invoice">
+        
+        <!-- Double column grid layout -->
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="expEvent" class="form-label fw-semibold">Event Hub</label>
+              <select class="form-select" id="expEvent" name="event_id" required>
+                <% events.forEach(evt => { %>
+                  <option value="<%= evt.event_id %>"><%= evt.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="expVendor" class="form-label fw-semibold">Vendor Link</label>
+              <select class="form-select" id="expVendor" name="vendor_id">
+                <option value="">No Vendor Link</option>
+                <% vendors.forEach(ven => { %>
+                  <option value="<%= ven.vendor_id %>"><%= ven.name %> (<%= ven.compliance_status %>)</option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="invoiceFile" class="form-label fw-semibold">Upload Invoice Receipt (Image/PDF)</label>
+              <input class="form-control" type="file" id="invoiceFile" name="invoice">
+            </div>
+          </div>
+          
+          <!-- Right Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="expDesc" class="form-label fw-semibold">Description</label>
+              <input type="text" class="form-control" id="expDesc" name="description" placeholder="e.g. Stage lighting rental" required>
+            </div>
+            <div class="mb-3">
+              <label for="expType" class="form-label fw-semibold">Expense Category</label>
+              <input type="text" class="form-control" id="expType" name="expense_type" placeholder="e.g. Equipment, Logistics, Food" required>
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label for="expAmount" class="form-label fw-semibold">Amount ($)</label>
+                <input type="number" step="0.01" class="form-control" id="expAmount" name="amount" placeholder="0.00" required>
+              </div>
+              <div class="col-6 mb-3">
+                <label for="expDate" class="form-label fw-semibold">Expense Date</label>
+                <input type="date" class="form-control" id="expDate" name="expense_date" required>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Submit Expense</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // SweetAlert2 Toast setup
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 1500,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+
+  // Data parsing from backend
+  const rawContributions = <%- JSON.stringify(contributions) %>;
+  const rawAllocations = <%- JSON.stringify(allocations) %>;
+  const rawExpenses = <%- JSON.stringify(expenses) %>;
+
+  // Calculate and populate stats
+  const totalContributions = rawContributions.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
+  const totalAllocations = rawAllocations.reduce((sum, a) => sum + parseFloat(a.allocated_amount || 0), 0);
+  const totalApproved = rawExpenses.filter(e => e.approval_status === 'Approved').reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+  const totalPending = rawExpenses.filter(e => e.approval_status === 'Pending' || e.approval_status === 'Recommended').reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+  const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  document.getElementById('statContributions').textContent = formatter.format(totalContributions);
+  document.getElementById('statAllocations').textContent = formatter.format(totalAllocations);
+  document.getElementById('statApprovedExpenses').textContent = formatter.format(totalApproved);
+  document.getElementById('statPendingExpenses').textContent = formatter.format(totalPending);
+
+  // Aggregate expenses by category
+  const categoryTotals = {};
+  rawExpenses.forEach(exp => {
+    if (exp.approval_status === 'Approved') {
+      const cat = (exp.expense_type || 'General').trim();
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + parseFloat(exp.amount || 0);
+    }
+  });
+
+  const categories = Object.keys(categoryTotals);
+  const amounts = Object.values(categoryTotals);
+
+  if (categories.length === 0) {
+    categories.push('No Approved Expenses');
+    amounts.push(0);
+  }
+
+  // Render Doughnut Chart
+  const financeCtx = document.getElementById('financeChart').getContext('2d');
+  
+  function getFinanceChartColors() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      text: isDark ? '#cbd5e1' : '#475569',
+      border: isDark ? '#1e293b' : '#ffffff',
+      pieColors: [
+        'rgba(99, 102, 241, 0.85)',
+        'rgba(16, 185, 129, 0.85)',
+        'rgba(245, 158, 11, 0.85)',
+        'rgba(239, 68, 68, 0.85)',
+        'rgba(14, 165, 233, 0.85)',
+        'rgba(168, 85, 247, 0.85)',
+        'rgba(236, 72, 153, 0.85)'
+      ]
+    };
+  }
+
+  let financeColors = getFinanceChartColors();
+
+  const financeChart = new Chart(financeCtx, {
+    type: 'doughnut',
+    data: {
+      labels: categories,
+      datasets: [{
+        data: amounts,
+        backgroundColor: financeColors.pieColors,
+        borderColor: financeColors.border,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: financeColors.text,
+            font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600', size: 13 }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleFont: { family: "'Outfit', sans-serif", weight: '700' },
+          bodyFont: { family: "'Plus Jakarta Sans', sans-serif" },
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: function(context) {
+              const val = context.raw;
+              return ' ' + context.label + ': ' + formatter.format(val);
+            }
+          }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+
+  window.addEventListener('themeChanged', (e) => {
+    const newColors = getFinanceChartColors();
+    financeChart.options.plugins.legend.labels.color = newColors.text;
+    financeChart.data.datasets[0].borderColor = newColors.border;
+    financeChart.update();
+  });
+
+  // Client-side tab navigation helper
+  window.showFinanceTab = function(tabId) {
+    const tabButton = document.querySelector(`#financeTabs button[data-bs-target="#${tabId}"]`);
+    if (tabButton) {
+      const tab = new bootstrap.Tab(tabButton);
+      tab.show();
+      document.getElementById('financeTabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // 1. Submit Expense Form via FormData API (supports file uploads)
+  document.getElementById('newExpenseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    try {
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Expense request filed successfully!'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: data.message || 'Operation failed.'
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error submitting expense.'
+      });
+    }
+  });
+
+  // 2. Approve/Reject Expense status
+  async function updateApproval(expId, status) {
+    try {
+      const res = await fetch(`/api/expenses/${expId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approval_status: status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: `Expense ${status.toLowerCase()}!`
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: data.message || 'Verification failed.'
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error verifying approval status.'
+      });
+    }
+  }
+
+  // 3. Mark Expense payment status as Paid (verifies invoice file availability first)
+  async function markPaid(expId, hasInvoice) {
+    if (hasInvoice === 'no') {
+      Toast.fire({
+        icon: 'warning',
+        title: 'Cannot mark as Paid: Upload invoice first!'
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/expenses/${expId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_status: 'Paid' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Expense cleared as PAID!'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: data.message
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error finalizing payment.'
+      });
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

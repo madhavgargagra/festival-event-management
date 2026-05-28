@@ -1,0 +1,134 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <h2 class="fw-bold"><i class="fa-solid fa-people-carry-box text-primary me-2"></i>Volunteer Dashboard</h2>
+    <span class="badge bg-success py-2 px-3 fs-6">Status: <%= profile.background_check_status %></span>
+  </div>
+
+  <div class="row">
+    <!-- Left Profile and Uploads Card Column -->
+    <div class="col-md-5 mb-4">
+      <div class="card card-premium shadow mb-4">
+        <div class="card-header-premium"><i class="fa-solid fa-user-tag me-2"></i>My Volunteer Profile</div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span class="text-muted">Email:</span>
+              <strong><%= profile.email %></strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span class="text-muted">Phone:</span>
+              <strong><%= profile.phone || 'N/A' %></strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span class="text-muted">Skillsets:</span>
+              <strong><%= profile.skillset || 'Not specified' %></strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span class="text-muted">My Score Rating:</span>
+              <strong class="text-warning"><%= parseFloat(profile.feedback_rating || 5.0).toFixed(2) %> / 5.00</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0">
+              <span class="text-muted">Availability Schedule:</span>
+              <strong><%= profile.availability_schedule || 'Not scheduled' %></strong>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card card-premium shadow">
+        <div class="card-header-premium"><i class="fa-solid fa-file-shield me-2"></i>Upload Credentials</div>
+        <div class="card-body">
+          <form id="uploadCertForm" enctype="multipart/form-data">
+            <input type="hidden" name="uploadType" value="certification">
+            
+            <div class="mb-3">
+              <label for="skills" class="form-label small fw-bold">Update Skillsets</label>
+              <input type="text" class="form-control" name="skillset" id="skills" value="<%= profile.skillset || '' %>" placeholder="e.g. First Aid, Hospitality, Security">
+            </div>
+
+            <div class="mb-3">
+              <label for="availability" class="form-label small fw-bold">Availability Schedule</label>
+              <input type="text" class="form-control" name="availability_schedule" id="availability" value="<%= profile.availability_schedule || '' %>" placeholder="e.g. Weekends, 18:00 - 22:00">
+            </div>
+
+            <div class="mb-4">
+              <label for="certFile" class="form-label small fw-bold">Upload Certification File (PDF Max 2MB)</label>
+              <input class="form-control" type="file" name="certification" id="certFile" required>
+              <% if (profile.certification_path) { %>
+                <div class="mt-2 text-success small"><i class="fa-solid fa-circle-check me-1"></i>Active: <a href="<%= profile.certification_path %>" target="_blank">View Certificate</a></div>
+              <% } %>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom w-100 py-2"><i class="fa-solid fa-cloud-arrow-up me-2"></i>Submit Verification</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Assignments Column -->
+    <div class="col-md-7">
+      <div class="card card-premium shadow">
+        <div class="card-header-premium"><i class="fa-solid fa-clock-rotate-left me-2"></i>My Scheduled Shifts</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-hover align-middle m-0 text-nowrap">
+            <thead class="table-light">
+              <tr>
+                <th>Event</th>
+                <th>Date</th>
+                <th>Role</th>
+                <th>Hours</th>
+                <th>Shift Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (assignments && assignments.length > 0) { %>
+                <% assignments.forEach(assoc => { %>
+                  <tr>
+                    <td><strong><%= assoc.Event ? assoc.Event.name : 'N/A' %></strong></td>
+                    <td><%= assoc.assigned_date %></td>
+                    <td><span class="badge bg-secondary"><%= assoc.role %></span></td>
+                    <td><%= assoc.hours_committed %> hrs</td>
+                    <td class="text-primary font-monospace small"><%= assoc.shift_time %></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="5" class="text-center py-5 text-muted">You are not currently assigned to any upcoming shifts.</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // AJAX post upload certificates
+  document.getElementById('uploadCertForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    try {
+      const res = await fetch('/api/volunteers/profile/certifications', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        window.location.reload();
+      } else {
+        alert(data.message || 'Verification file size limit exceeded.');
+      }
+    } catch(err) {
+      alert('Error uploading document file.');
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

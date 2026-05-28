@@ -1,0 +1,282 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+      <h2 class="fw-bold"><i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>Organize a Festival/Event</h2>
+      <p class="text-muted m-0">Coordinate plans, assign duties, and track financial status.</p>
+    </div>
+    <button class="btn btn-primary-custom btn-lg shadow-sm" data-bs-toggle="modal" data-bs-target="#createEventModal"><i class="fa-solid fa-plus me-2"></i>Organize</button>
+  </div>
+
+  <h3 class="fw-bold mb-4 mt-5"><i class="fa-solid fa-folder-open text-warning me-2"></i>My Organized Events</h3>
+
+  <!-- Organized Events Cards -->
+  <div class="row">
+    <% if (events && events.length > 0) { %>
+      <% events.forEach(evt => { %>
+        <div class="col-md-6 mb-4">
+          <div class="card card-premium shadow h-100">
+            <div class="card-body d-flex flex-column">
+              <h4 class="fw-bold mb-2"><%= evt.name %></h4>
+              <p class="text-muted small flex-grow-1"><%= evt.description || 'No description provided.' %></p>
+              
+              <div class="bg-light-custom p-3 rounded mb-3 small">
+                <div><i class="fa-regular fa-calendar me-2 text-primary"></i><%= new Date(evt.date).toLocaleString() %></div>
+                <div class="mt-1"><i class="fa-solid fa-location-dot me-2 text-accent"></i><%= evt.location %></div>
+                <div class="mt-1"><i class="fa-solid fa-dollar-sign me-2 text-success"></i>Budget: <strong>$<%= parseFloat(evt.budget_estimate).toFixed(2) %></strong></div>
+              </div>
+
+              <% 
+                const acquired = evt.ContributionAllocations ? evt.ContributionAllocations.reduce((sum, a) => sum + parseFloat(a.allocated_amount || 0), 0) : 0;
+              %>
+              <!-- Button to open organizer management popup panel -->
+              <button class="btn btn-sm btn-outline-primary py-2 mt-auto fw-semibold" onclick="openOrganizedDetailsModal('<%= evt.event_id %>', '<%= evt.name %>', '<%= evt.description ? evt.description.replace(/'/g, '\\\'') : '' %>', '<%= evt.location %>', '<%= new Date(evt.date).toLocaleString() %>', '<%= parseFloat(evt.budget_estimate).toFixed(2) %>', '<%= parseFloat(acquired).toFixed(2) %>')">
+                <i class="fa-solid fa-sliders me-2"></i>Manage Dashboard Panel
+              </button>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12 text-center py-5 text-muted">
+        <i class="fa-solid fa-ban fa-3x mb-3 text-opacity-25"></i>
+        <h5>You haven't organized any events yet.</h5>
+        <p class="small text-muted">Click the "Organize" button above to get started!</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal: Organizer Details Popup Panel -->
+<div class="modal fade" id="organizedDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="panelTitle">Manage Event Panel</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <!-- Dashboard panels for active organizer -->
+        <div class="row">
+          <!-- Left metrics panel -->
+          <div class="col-md-6 mb-4">
+            <div class="card card-premium p-3 mb-3">
+              <h6 class="text-muted small fw-bold text-uppercase"><i class="fa-solid fa-calculator text-primary me-2"></i>Budget & Funds</h6>
+              <ul class="list-group list-group-flush bg-transparent">
+                <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                  <span>Required Budget:</span>
+                  <strong id="panelBudget">$0.00</strong>
+                </li>
+                <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                  <span>Funds Acquired:</span>
+                  <strong class="text-success" id="panelFunds">$2,500.00 (Allocated)</strong>
+                </li>
+                <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                  <span>Net Bal:</span>
+                  <strong class="text-info" id="panelNet">$2,500.00</strong>
+                </li>
+              </ul>
+            </div>
+
+            <div class="card card-premium p-3">
+              <h6 class="text-muted small fw-bold text-uppercase"><i class="fa-solid fa-location-dot text-accent me-2"></i>Venue details</h6>
+              <p class="m-0 small mt-2" id="panelVenue">City Park Stage A</p>
+              <p class="m-0 small text-muted" id="panelTime">Scheduled: June 15, 2026</p>
+            </div>
+
+            <div class="card card-premium p-3 mt-3 text-center">
+              <h6 class="text-muted small fw-bold text-uppercase mb-2"><i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>Export Summary</h6>
+              <button id="panelPrintBtn" class="btn btn-sm btn-accent-custom w-100 py-2 fw-semibold">
+                <i class="fa-solid fa-file-pdf me-2"></i>Print Invoice/PDF Report
+              </button>
+            </div>
+          </div>
+
+          <!-- Right co-organizers and volunteers panels -->
+          <div class="col-md-6">
+            <div class="card card-premium p-3 mb-3">
+              <h6 class="text-muted small fw-bold text-uppercase"><i class="fa-solid fa-user-group text-warning me-2"></i>Co-Organizers Details</h6>
+              <div class="mt-2 small">
+                <strong>Admin & Finance Support</strong><br>
+                <span class="text-muted">admin@fest.com | 555-0100</span>
+              </div>
+            </div>
+
+            <div class="card card-premium p-3">
+              <h6 class="text-muted small fw-bold text-uppercase"><i class="fa-solid fa-users-gear text-success me-2"></i>Participated Volunteers</h6>
+              <ul class="list-group list-group-flush bg-transparent mt-2 small" id="panelVolunteers">
+                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
+                  <span>Valerie Volunteer</span>
+                  <span class="badge bg-success">Active</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Create Event (Shared) -->
+<div class="modal fade" id="createEventModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form id="createEventForm" class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold">Organize Event / Festival</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <!-- Double column grid layout -->
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="orgName" class="form-label fw-semibold">Organizer Name</label>
+              <input type="text" class="form-control" id="orgName" value="<%= locals.user ? user.name : '' %>" required readonly>
+            </div>
+            <div class="mb-3">
+              <label for="orgEmail" class="form-label fw-semibold">Organizer Email</label>
+              <input type="email" class="form-control" id="orgEmail" value="<%= locals.user ? user.email : '' %>" required readonly>
+            </div>
+            <div class="mb-3">
+              <label for="evtNameInput" class="form-label fw-semibold">Event Name</label>
+              <input type="text" class="form-control" id="evtNameInput" placeholder="e.g. Community Music Night" required>
+            </div>
+            <div class="mb-3">
+              <label for="evtDescInput" class="form-label fw-semibold">Event Description</label>
+              <textarea class="form-control" id="evtDescInput" rows="3" placeholder="Brief details about the event..."></textarea>
+            </div>
+          </div>
+          
+          <!-- Right Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="evtFestSelect" class="form-label fw-semibold">Festival Umbrella</label>
+              <select class="form-select" id="evtFestSelect" required>
+                <% if (festivals && festivals.length > 0) { %>
+                  <% festivals.forEach(f => { %>
+                    <option value="<%= f.festival_id %>"><%= f.name %> (<%= f.start_date %> to <%= f.end_date %>)</option>
+                  <% }) %>
+                <% } else { %>
+                  <option value="" disabled selected>No active festivals. Please contact an admin.</option>
+                <% } %>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="evtLocInput" class="form-label fw-semibold">Venue Location</label>
+              <input type="text" class="form-control" id="evtLocInput" placeholder="e.g. Park Pavilion" required>
+            </div>
+            <div class="mb-3">
+              <label for="evtDateInput" class="form-label fw-semibold">Scheduled Date & Time</label>
+              <input type="datetime-local" class="form-control" id="evtDateInput" required>
+              <small class="text-muted" style="font-size: 0.85rem; display: block; margin-top: 6px;">
+                <i class="fa-regular fa-keyboard me-1"></i>Type manually OR click the calendar icon
+              </small>
+            </div>
+            <div class="mb-3">
+              <label for="evtBudgetInput" class="form-label fw-semibold">Budget Required ($)</label>
+              <input type="number" step="0.01" class="form-control" id="evtBudgetInput" placeholder="0.00" required>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Create Event</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // SweetAlert2 Toast setup
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 1500,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+
+  // 1. Open Event Management details panel modal
+  function openOrganizedDetailsModal(id, name, desc, loc, date, budget, acquired) {
+    document.getElementById('panelTitle').textContent = `Manage Event Panel — ${name}`;
+    document.getElementById('panelBudget').textContent = `$${budget}`;
+    document.getElementById('panelVenue').textContent = loc;
+    document.getElementById('panelTime').textContent = `Scheduled: ${date}`;
+
+    const budgetVal = parseFloat(budget);
+    const acquiredFunds = parseFloat(acquired || 0).toFixed(2);
+    document.getElementById('panelFunds').textContent = `$${acquiredFunds}`;
+    document.getElementById('panelNet').textContent = `$${(budgetVal - parseFloat(acquiredFunds)).toFixed(2)}`;
+
+    // Set printable invoice PDF window click trigger
+    document.getElementById('panelPrintBtn').onclick = () => {
+      window.open(`/events/${id}/report`, '_blank');
+    };
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('organizedDetailsModal')).show();
+  }
+
+  // 2. Submit Event creation AJAX request
+  document.getElementById('createEventForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const festival_id = document.getElementById('evtFestSelect').value;
+    const name = document.getElementById('evtNameInput').value;
+    const description = document.getElementById('evtDescInput').value;
+    const location = document.getElementById('evtLocInput').value;
+    const dateStr = document.getElementById('evtDateInput').value;
+    const budget_estimate = document.getElementById('evtBudgetInput').value;
+
+    if (!dateStr) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Please enter a valid Date & Time'
+      });
+      return;
+    }
+    const parsedDate = new Date(dateStr);
+    if (isNaN(parsedDate.getTime())) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Invalid Date & Time selection.'
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ festival_id, name, description, location, date: parsedDate.toISOString(), budget_estimate })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Event created successfully under your profile!'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: data.message || 'Validation failed. Check festival dates!'
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error creating event.'
+      });
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,39 @@
+<!-- Modal: Audit Trail Diff Viewer -->
+<div class="modal fade" id="auditDiffModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold" id="auditDiffModalTitle">
+          <i class="fa-solid fa-code-compare text-primary me-2"></i>Inspect Changed State Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="alert bg-light-custom border mb-4">
+          <div class="row text-center small fw-semibold">
+            <div class="col-4 border-end">Entity Type: <span id="diffEntityType" class="text-primary">N/A</span></div>
+            <div class="col-4 border-end">Record ID: <span id="diffEntityId" class="text-accent">N/A</span></div>
+            <div class="col-4">Action: <span id="diffAction" class="badge">N/A</span></div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 30%;">Column Property</th>
+                <th style="width: 35%;">Old Value (Before)</th>
+                <th style="width: 35%;">New Value (After)</th>
+              </tr>
+            </thead>
+            <tbody id="auditDiffTableBody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

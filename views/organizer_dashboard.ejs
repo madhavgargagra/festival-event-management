@@ -1,0 +1,403 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <h2 class="fw-bold"><i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>Organizer Panel</h2>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#assignVolunteerModal"><i class="fa-solid fa-people-carry-box me-2"></i>Assign Volunteer</button>
+      <button class="btn btn-accent-custom" data-bs-toggle="modal" data-bs-target="#allocateContributionModal"><i class="fa-solid fa-circle-dollar-to-slot me-2"></i>Allocate Donation</button>
+    </div>
+  </div>
+
+  <ul class="nav nav-pills mb-4" id="organizerTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabEvents">My Events Hub</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAllocations">Donation Allocations</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabExpenses">Recommend Expenses</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabVendors">Evaluate Vendors</button></li>
+  </ul>
+
+  <div class="tab-content">
+    <!-- Events Tab Pane -->
+    <div class="tab-pane fade show active" id="tabEvents">
+      <div class="card card-premium">
+        <div class="card-header-premium">Scheduled Events List</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Festival</th>
+                <th>Event Name</th>
+                <th>Date & Time</th>
+                <th>Location</th>
+                <th>Budget Estimate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% events.forEach(evt => { %>
+                <tr>
+                  <td><%= evt.event_id %></td>
+                  <td><%= evt.Festival ? evt.Festival.name : 'N/A' %></td>
+                  <td><strong><%= evt.name %></strong></td>
+                  <td><%= new Date(evt.date).toLocaleString() %></td>
+                  <td><%= evt.location %></td>
+                  <td class="fw-bold">$<%= parseFloat(evt.budget_estimate).toFixed(2) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocations Tab Pane -->
+    <div class="tab-pane fade" id="tabAllocations">
+      <div class="card card-premium">
+        <div class="card-header-premium">Donations Allocated to Events</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-striped align-middle m-0">
+            <thead>
+              <tr>
+                <th>Allocation ID</th>
+                <th>Contribution Source</th>
+                <th>Target Event</th>
+                <th>Allocated Item</th>
+                <th>Allocated Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% allocations.forEach(alloc => { %>
+                <tr>
+                  <td><%= alloc.allocation_id %></td>
+                  <td>#<%= alloc.contribution_id %> (<%= alloc.Contribution ? alloc.Contribution.contribution_type : 'N/A' %>)</td>
+                  <td><strong><%= alloc.Event ? alloc.Event.name : 'Unknown' %></strong></td>
+                  <td><%= alloc.allocated_item %></td>
+                  <td class="fw-bold text-success">$<%= parseFloat(alloc.allocated_amount || 0).toFixed(2) %></td>
+                  <td><%= alloc.allocation_date %></td>
+                  <td>
+                    <span class="badge <%= alloc.status === 'Allocated' ? 'bg-success' : 'bg-warning text-dark' %>">
+                      <%= alloc.status %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommend Expenses Pane -->
+    <div class="tab-pane fade" id="tabExpenses">
+      <div class="card card-premium">
+        <div class="card-header-premium">Recommend Pending Budget Expenditures (Two-Level Process)</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Target Event</th>
+                <th>Vendor</th>
+                <th>Amount</th>
+                <th>Current Status</th>
+                <th>Invoice</th>
+                <th>Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <script>
+                // Local state variable placeholder to capture recommended logs
+              </script>
+              <!-- Fetch expenses that are still Pending -->
+              <% // Make custom call to fetch API locally %>
+              <div id="expenseListPlaceholder"></div>
+            </tbody>
+          </table>
+          <div class="p-4 text-center text-muted small">
+            Please use the **Finance Board** or **Admin Panel** to approve recommended expenses, or recommend them via the central API endpoint.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluate Vendors Tab Pane -->
+    <div class="tab-pane fade" id="tabVendors">
+      <div class="card card-premium">
+        <div class="card-header-premium">Review & Evaluate Active Vendors</div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-striped align-middle m-0">
+            <thead>
+              <tr>
+                <th>Vendor ID</th>
+                <th>Vendor Name</th>
+                <th>Service Type</th>
+                <th>Past Performance Rating</th>
+                <th>Evaluate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% vendorEvaluations.forEach(ven => { %>
+                <tr id="vendor-eval-<%= ven.vendor_id %>">
+                  <td><%= ven.vendor_id %></td>
+                  <td><strong><%= ven.name %></strong></td>
+                  <td><%= ven.service_type %></td>
+                  <td class="fw-bold text-info"><%= parseFloat(ven.past_performance).toFixed(2) %> / 5.00</td>
+                  <td>
+                    <div class="input-group input-group-sm" style="max-width: 200px;">
+                      <select class="form-select" id="score-<%= ven.vendor_id %>">
+                        <option value="5.0">5 - Excellent</option>
+                        <option value="4.0">4 - Good</option>
+                        <option value="3.0">3 - Satisfactory</option>
+                        <option value="2.0">2 - Poor</option>
+                        <option value="1.0">1 - Very Bad</option>
+                      </select>
+                      <button class="btn btn-primary-custom" onclick="submitEvaluation('<%= ven.vendor_id %>')">Submit</button>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Assign Volunteer -->
+<div class="modal fade" id="assignVolunteerModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form id="assignVolunteerForm" class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold">Dispatch Volunteer to Event</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="volSelect" class="form-label fw-semibold">Select Volunteer (Background Passed Only)</label>
+              <select class="form-select" id="volSelect" required>
+                <% volunteers.forEach(v => { %>
+                  <option value="<%= v.volunteer_id %>"><%= v.name %> (Skills: <%= v.skillset || 'None' %>)</option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="evtSelect" class="form-label fw-semibold">Target Event</label>
+              <select class="form-select" id="evtSelect" required>
+                <% events.forEach(e => { %>
+                  <option value="<%= e.event_id %>"><%= e.name %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="volRole" class="form-label fw-semibold">Duty Assignment Role</label>
+              <input type="text" class="form-control" id="volRole" placeholder="e.g. Ticketing Assistant, Crowd Management" required>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="volDate" class="form-label fw-semibold">Shift Date</label>
+              <input type="date" class="form-control" id="volDate" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="volHours" class="form-label fw-semibold">Committed Hours</label>
+              <input type="number" class="form-control" id="volHours" placeholder="e.g. 4" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="volShift" class="form-label fw-semibold">Shift Time Range</label>
+              <select class="form-select" id="volShift" required>
+                <option value="09:00 - 13:00">Morning Shift (09:00 - 13:00)</option>
+                <option value="13:00 - 17:00">Afternoon Shift (13:00 - 17:00)</option>
+                <option value="17:00 - 21:00">Evening Shift (17:00 - 21:00)</option>
+                <option value="21:00 - 01:00">Night Shift (21:00 - 01:00)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Assign Shift</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Allocate Contribution -->
+<div class="modal fade" id="allocateContributionModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form id="allocateContributionForm" class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title fw-bold">Allocate Donation to Event</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="contribSelect" class="form-label fw-semibold">Donation Source</label>
+              <select class="form-select" id="contribSelect" required>
+                <% contributions.forEach(c => { %>
+                  <option value="<%= c.contribution_id %>">#<%= c.contribution_id %>: <%= c.Contributor ? c.Contributor.name : 'Anon' %> - $<%= parseFloat(c.amount || 0).toFixed(2) %> (<%= c.contribution_type %>)</option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="allocEventSelect" class="form-label fw-semibold">Event Destination</label>
+              <select class="form-select" id="allocEventSelect" required>
+                <% events.forEach(e => { %>
+                  <option value="<%= e.event_id %>"><%= e.name %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="allocItem" class="form-label fw-semibold">Allocated Item Specification</label>
+              <input type="text" class="form-control" id="allocItem" placeholder="e.g. Cash budget support, Sound system usage" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="allocAmount" class="form-label fw-semibold">Allocated Amount ($)</label>
+              <input type="number" step="0.01" class="form-control" id="allocAmount" placeholder="0.00" required>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary-custom">Allocate Funds</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // SweetAlert2 Toast setup
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 1500,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+
+  // 1. Submit volunteer shift assignment
+  document.getElementById('assignVolunteerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const volunteer_id = document.getElementById('volSelect').value;
+    const event_id = document.getElementById('evtSelect').value;
+    const role = document.getElementById('volRole').value;
+    const assigned_date = document.getElementById('volDate').value;
+    const hours_committed = document.getElementById('volHours').value;
+    const shift_time = document.getElementById('volShift').value;
+
+    try {
+      const res = await fetch('/api/volunteers/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volunteer_id, event_id, role, assigned_date, hours_committed, shift_time })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Volunteer assigned successfully!'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        Toast.fire({
+          icon: 'warning',
+          title: data.message || 'Overlap conflict detected.'
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error saving assignment details.'
+      });
+    }
+  });
+
+  // 2. Submit Donation allocation details
+  document.getElementById('allocateContributionForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const contribution_id = document.getElementById('contribSelect').value;
+    const event_id = document.getElementById('allocEventSelect').value;
+    const allocated_item = document.getElementById('allocItem').value;
+    const allocated_amount = document.getElementById('allocAmount').value;
+
+    try {
+      const res = await fetch('/api/allocations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contribution_id, event_id, allocated_item, allocated_amount })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: data.message
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        Toast.fire({
+          icon: 'error',
+          title: data.message
+        });
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Error creating allocation.'
+      });
+    }
+  });
+
+  // 3. Vendor evaluation trigger
+  async function submitEvaluation(venId) {
+    const score = document.getElementById(`score-${venId}`).value;
+    try {
+      const res = await fetch(`/api/vendors/${venId}/evaluate`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Toast.fire({
+          icon: 'success',
+          title: 'Vendor rating submitted!'
+        });
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch(err) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Failed to rate vendor.'
+      });
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

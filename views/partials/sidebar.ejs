@@ -1,0 +1,75 @@
+<!-- Sidebar layout navigation menu -->
+<div class="sidebar d-none d-md-flex flex-column">
+  <div class="sidebar-heading text-center d-flex align-items-center justify-content-center gap-2 py-4">
+    <i class="fa-solid fa-masks-theater text-info fs-4 animate-float"></i>
+    <span class="fs-5 fw-extrabold text-white" style="letter-spacing: 0.5px;">FestSystem</span>
+  </div>
+  
+  <div class="nav flex-column mt-4 flex-grow-1">
+    <a href="/dashboard" class="nav-link" id="nav-dashboard">
+      <i class="fa-solid fa-gauge me-3"></i>Dashboard
+    </a>
+    <a href="/events" class="nav-link" id="nav-events">
+      <i class="fa-solid fa-calendar-days me-3"></i>Events
+    </a>
+    <a href="/festivals" class="nav-link" id="nav-festivals">
+      <i class="fa-solid fa-champagne-glasses me-3"></i>Festivals
+    </a>
+    <a href="/organize" class="nav-link" id="nav-organize">
+      <i class="fa-solid fa-wand-magic-sparkles me-3"></i>Organize
+    </a>
+    <a href="/vendors" class="nav-link" id="nav-vendors">
+      <i class="fa-solid fa-truck-ramp-box me-3"></i>Vendors
+    </a>
+    <a href="/profile" class="nav-link" id="nav-profile">
+      <i class="fa-solid fa-user me-3"></i>Profile
+    </a>
+  </div>
+
+  <div class="mt-auto p-4 bg-dark bg-opacity-30 border-top border-white border-opacity-10">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="small text-white-50">Visual Theme</span>
+      <button class="btn btn-sm btn-link text-white-50 p-1 hover-text-white" onclick="toggleSystemTheme()" style="color: rgba(255,255,255,0.6); transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'" aria-label="Toggle Theme">
+        <i class="fa-solid fa-circle-half-stroke fs-5"></i>
+      </button>
+    </div>
+    <div class="small text-white-50 mb-2">
+      Logged in as:
+    </div>
+    <div class="fw-bold text-white text-truncate mb-1"><%= locals.user ? locals.user.name : 'Guest' %></div>
+    <div class="small text-info mb-3 d-flex align-items-center gap-1">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span><%= locals.user ? locals.user.role : '' %></span>
+    </div>
+    <a href="/api/auth/logout" class="btn btn-outline-danger btn-sm w-100 py-2 fw-semibold">
+      <i class="fa-solid fa-right-from-bracket me-2"></i>Logout
+    </a>
+  </div>
+</div>
+
+<script>
+  // Auto highlight active navigation menu link
+  document.addEventListener("DOMContentLoaded", function() {
+    const currentPath = window.location.pathname;
+    const navs = {
+      "/dashboard": "nav-dashboard",
+      "/admin/dashboard": "nav-dashboard",
+      "/finance/dashboard": "nav-dashboard",
+      "/organizer/dashboard": "nav-dashboard",
+      "/volunteer/dashboard": "nav-dashboard",
+      "/contributor/dashboard": "nav-dashboard",
+      "/vendor/dashboard": "nav-dashboard",
+      "/events": "nav-events",
+      "/festivals": "nav-festivals",
+      "/organize": "nav-organize",
+      "/vendors": "nav-vendors",
+      "/profile": "nav-profile"
+    };
+    
+    const activeId = navs[currentPath];
+    if (activeId) {
+      const activeLink = document.getElementById(activeId);
+      if (activeLink) activeLink.classList.add("active");
+    }
+  });
+</script>

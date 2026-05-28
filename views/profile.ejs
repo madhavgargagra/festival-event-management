@@ -1,0 +1,121 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-content flex-grow-1">
+  <h2 class="fw-bold mb-4 pb-2 border-bottom"><i class="fa-solid fa-user-gear text-primary me-2"></i>My Profile Info</h2>
+
+  <div class="row">
+    <!-- Left Section: Profile Details -->
+    <div class="col-md-6 mb-4">
+      <div class="card card-premium shadow h-100">
+        <div class="card-header-premium"><i class="fa-solid fa-id-card me-2"></i>Personal Info</div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between px-0 py-3">
+              <span class="text-muted">Full Name:</span>
+              <strong><%= profile.name %></strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0 py-3">
+              <span class="text-muted">Contact phone:</span>
+              <strong><%= profile.phone || 'N/A' %></strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0 py-3">
+              <span class="text-muted">Email address:</span>
+              <strong><%= profile.email %></strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0 py-3">
+              <span class="text-muted">Registered Role:</span>
+              <span class="badge bg-primary px-3 py-2"><%= locals.user ? user.role : 'Guest' %></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Section: Contribution details (If Contributor) -->
+    <div class="col-md-6 mb-4">
+      <div class="card card-premium shadow h-100 p-4 d-flex flex-column justify-content-center text-center">
+        <div class="card-body">
+          <i class="fa-solid fa-circle-dollar-to-slot fa-3x text-success mb-3"></i>
+          <h4 class="fw-bold">My Financial Contributions</h4>
+          <p class="text-muted mt-2">Total monetary sum donated to the community festival collections.</p>
+          <div class="display-6 fw-bold text-success mt-3">$<%= parseFloat(totalDonated || 0).toFixed(2) %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Section: Participations (Volunteer Shifts, Contributions, etc.) -->
+  <div class="card card-premium shadow mb-4">
+    <div class="card-header-premium"><i class="fa-solid fa-handshake me-2"></i>My Active Participations</div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-striped align-middle m-0">
+        <thead class="table-light">
+          <tr>
+            <th>Event / Festival</th>
+            <th>My Role</th>
+            <th>Date</th>
+            <th>Hours / Contributions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% let hasAssignments = (locals.user && user.role === 'Volunteer' && assignments && assignments.length > 0); %>
+          <% let hasContributions = (contributions && contributions.length > 0); %>
+          
+          <% if (!hasAssignments && !hasContributions) { %>
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">No active participations or shifts recorded.</td>
+            </tr>
+          <% } else { %>
+            <% if (hasAssignments) { %>
+              <% assignments.forEach(assoc => { %>
+                <tr>
+                  <td><strong><%= assoc.Event ? assoc.Event.name : 'N/A' %></strong></td>
+                  <td><span class="badge bg-success">Volunteer</span></td>
+                  <td><%= assoc.assigned_date %></td>
+                  <td><%= assoc.hours_committed %> committed hours (<%= assoc.shift_time %>)</td>
+                </tr>
+              <% }) %>
+            <% } %>
+            <% if (hasContributions) { %>
+              <% contributions.forEach(con => { %>
+                <tr>
+                  <td><strong>Festival Donor Program</strong></td>
+                  <td><span class="badge bg-info text-dark">Contributor</span></td>
+                  <td><%= con.date %></td>
+                  <td class="fw-bold text-success">$<%= parseFloat(con.amount || 0).toFixed(2) %> (<%= con.contribution_type %>)</td>
+                </tr>
+              <% }) %>
+            <% } %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Final Section: My Organized Events -->
+  <div class="card card-premium shadow">
+    <div class="card-header-premium"><i class="fa-solid fa-folder-open me-2"></i>My Organized Events</div>
+    <div class="card-body">
+      <div class="row">
+        <% if (organizedEvents && organizedEvents.length > 0) { %>
+          <% organizedEvents.forEach(evt => { %>
+            <div class="col-md-4 mb-3">
+              <a href="/organize" class="card card-premium p-3 text-decoration-none h-100 border border-light">
+                <h5 class="fw-bold text-secondary text-truncate mb-2"><%= evt.name %></h5>
+                <span class="small text-muted"><i class="fa-regular fa-calendar me-1"></i><%= new Date(evt.date).toLocaleDateString() %></span>
+                <span class="small text-muted d-block"><i class="fa-solid fa-location-dot me-1"></i><%= evt.location %></span>
+              </a>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="col-12 text-muted text-center py-3 small">
+            You have not organized any events. <a href="/organize" class="text-primary fw-semibold">Click here to start.</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
